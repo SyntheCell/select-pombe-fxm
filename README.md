@@ -211,27 +211,31 @@ Max. volume:    137.0 µm3
 
 
 ### Group mode
-This mode allows the user to separate cells into different groups, based on other fluorescent markers.
-For this, it uses images on a different fluorescent channel as well as the FXm images.
+This mode allows the user to separate cells into different groups.
+For this, it uses the original FXm images and, if needed, images on a different fluorescent channel to observe an appropriate fluorescent marker.
 
-After running the manual or the automatic mode, run the group mode as follows:
+After running the manual or the automatic mode, run the group mode choosing one of the following:
+
+1. To assign groups to manually filtered cells from FXm images (run Manual mode first)
 ```shell script
-# To assign groups to manually filtered cells (run Manual mode first)
-
-python group.py </path/to/data_M.tsv> -g <group number> -f <prefix of FXm images> -m <prefix of marker images>
+python group.py </path/to/data_M.tsv> -g <group number>
 ```
+2. To assign groups to all cells from FXm images (run Automatic mode first)
 ```shell script
-# To assign groups to all cells (run Automatic mode first)
-
+python group.py </path/to/data_A.tsv> -g <group number>
+```
+3. To assign groups by using a different fluorescent channel (works from cells selected manually or automatically)
+```shell script
 python group.py </path/to/data_A.tsv> -g <group number> -f <prefix of FXm images> -m <prefix of marker images>
 ```
+
 This will open a `pyplot` window showing the selected cells or all the objects, which are automatically assigned to Group 1 (G1).
 The user will be able to select the appropriate group as follows:
 
 - Left click on each object to increase the group number.
 - Right click on each object to decrease the group number.
 - Discard object by assigning the `None` group (group 0) (for instance, right click when group is 1)
-- Click on the radiobuttons (or press `space`) to alternate between FXm image and the fluorescent marker image.
+- When using a different fluorescence channel, click on the radiobuttons (or press `space`) to alternate between FXm image and the fluorescent marker image.
 
 This mode will make a copy of the analysis, will add a column "Group" with the group information, and will save the file by adding `_grp` to its name (e.g., `data_A_grp.tsv` or `data_M_grp.tsv`)
 

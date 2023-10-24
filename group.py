@@ -128,12 +128,14 @@ def filter_cells(img, marker, mask, cells_df, path=None, ng=0):
 
         fxm_img = plt.imshow(msk_img)
         fxm_list.append(fxm_img)
-        msk_marker = marker[x0:x1, y0:y1] * (mask[x0:x1, y0:y1] > 0)
 
-        # Changes the color map if your marker is not red
-        # You can edit vmin and vmax values to change the display of the marker
-        marker_img = plt.imshow(msk_marker, cmap=plt.cm.Reds, alpha=1, vmin=250, vmax=450)
-        marker_list.append(marker_img)
+        if type(marker) != type(None):
+            msk_marker = marker[x0:x1, y0:y1] * (mask[x0:x1, y0:y1] > 0)
+
+            # Changes the color map if your marker is not red
+            # You can edit vmin and vmax values to change the display of the marker
+            marker_img = plt.imshow(msk_marker, cmap=plt.cm.Reds, alpha=1, vmin=250, vmax=450)
+            marker_list.append(marker_img)
 
         # Uncomments next line to draw point to identify cell
         # plt.scatter(100, 100, s=1, color="red")
@@ -142,36 +144,37 @@ def filter_cells(img, marker, mask, cells_df, path=None, ng=0):
 
     cid = fig.canvas.mpl_connect('button_press_event', on_click)  # Listens for click on object
 
-    def change_channel(label):
-        global ax, fxm_list, marker_list
-        if label == "FXm":
-            for c, v in enumerate(fxm_list):
-                v.set_alpha(1)
-                marker_list[c].set_alpha(0)
+    if type(marker) != type(None):
+        def change_channel(label):
+            global ax, fxm_list, marker_list
+            if label == "FXm":
+                for c, v in enumerate(fxm_list):
+                    v.set_alpha(1)
+                    marker_list[c].set_alpha(0)
 
-        elif label == "Marker":
-            for c, v in enumerate(fxm_list):
-                v.set_alpha(0)
-                marker_list[c].set_alpha(1)
+            elif label == "Marker":
+                for c, v in enumerate(fxm_list):
+                    v.set_alpha(0)
+                    marker_list[c].set_alpha(1)
 
-        plt.draw()
+            plt.draw()
 
-    def on_press(event):
-        if event.key == ' ':
-            sel = radio.value_selected
-            for c, v in enumerate(radio.labels):
-                # Finds the non-selected label
-                label = v.get_text()
-                if sel != label:
-                    radio.set_active(c)
-                    break
+        def on_press(event):
+            if event.key == ' ':
+                sel = radio.value_selected
+                for c, v in enumerate(radio.labels):
+                    # Finds the non-selected label
+                    label = v.get_text()
+                    if sel != label:
+                        radio.set_active(c)
+                        break
 
-    # Creates new subplot with the radiobuttons
-    rax = fig.add_subplot(rows, columns, j + 1)
-    radio = RadioButtons(rax, ("Marker", "FXm"))
-    radio.on_clicked(change_channel)
+        # Creates new subplot with the radiobuttons
+        rax = fig.add_subplot(rows, columns, j + 1)
+        radio = RadioButtons(rax, ("Marker", "FXm"))
+        radio.on_clicked(change_channel)
 
-    fig.canvas.mpl_connect('key_press_event', on_press)
+        fig.canvas.mpl_connect('key_press_event', on_press)
 
     plt.show()
 
@@ -215,31 +218,35 @@ def print_group_stats(data, group_number):
     else:
         print(f"Cells in\n{'all groups:':18}{cell_count:d}")
 
-    print()
-    print(f"{'Mean volume:':18}{mean_vol:.1f} µm3")
-    print(f"{'Volume stdev:':18}{std_vol:.1f} µm3")
-    print(f"{'Min. volume:':18}{min_vol:.1f} µm3")
-    print(f"{'1st quartile:':18}{Q1_vol:.1f} µm3")
-    print(f"{'Median:':18}{med_vol:.1f} µm3")
-    print(f"{'Median abs. dev.:':18}{mad:.1f} µm3")
-    print(f"{'3rd quartile:':18}{Q3_vol:.1f} µm3")
-    print(f"{'Max. volume:':18}{max_vol:.1f} µm3")
+    if cell_count > 0:
+        print()
+        print(f"{'Mean volume:':18}{mean_vol:.1f} µm3")
+        print(f"{'Volume stdev:':18}{std_vol:.1f} µm3")
+        print(f"{'Min. volume:':18}{min_vol:.1f} µm3")
+        print(f"{'1st quartile:':18}{Q1_vol:.1f} µm3")
+        print(f"{'Median:':18}{med_vol:.1f} µm3")
+        print(f"{'Median abs. dev.:':18}{mad:.1f} µm3")
+        print(f"{'3rd quartile:':18}{Q3_vol:.1f} µm3")
+        print(f"{'Max. volume:':18}{max_vol:.1f} µm3")
 
 
 # User interaction and parameter logic
 parser = argparse.ArgumentParser(description="Separate FXm cells in groups")
 parser.add_argument("path", type=str, help="Path to .tsv analysis file")
 parser.add_argument("-g", "--groups", type=int, help="Number of groups to classify the cells in.")
+# TODO deal with prefix arguments properly
 parser.add_argument("-f", "--fxm-prefix", type=str, help="Prefix of the fxm file name (e.g. FITC, for FITC-1.tif file)")
 parser.add_argument("-m", "--marker-prefix", type=str,
                     help="Prefix of the marker file name (e.g. mCherry, for mCherry-1.tif file)")
 
 # Changes the following defaults to match your image filenames
+"""
 parser.set_defaults(
     groups=2,
     fxm_prefix="GFP",
     marker_prefix="dsRED"
 )
+"""
 
 args = parser.parse_args()
 
@@ -263,7 +270,10 @@ if ng < 2:
     print("You need at least 2 groups to separate cells.")
     exit()
 
-print(f"Grouping cells in {ng} groups. Using '{fxm_prefix}*.tif' FXm images and '{marker_prefix}*.tif' marker images")
+if marker_prefix:
+    print(f"Grouping cells in {ng} groups. Using '{fxm_prefix}*.tif' FXm images and '{marker_prefix}*.tif' marker images")
+else:
+    print(f"Grouping cells in {ng} groups. Using '{fxm_prefix}*.tif' FXm images")
 
 # Opens .tsv file
 df = pd.read_csv(path, sep='\t', index_col=0)
@@ -275,14 +285,18 @@ filenames.sort()
 for file in filenames:
     img = mh.imread(file + ".tif")
 
-    marker_file = file.replace(fxm_prefix, marker_prefix) + ".tif"
-    marker = mh.imread(marker_file)
+    if marker_prefix:
+        marker_file = file.replace(fxm_prefix, marker_prefix) + ".tif"
+        marker = mh.imread(marker_file)
+    else:
+        marker = None
 
     mask_file = file + "_maskFram1.png"
     mask = mh.imread(mask_file)
 
     partial_df = df.loc[df['Path'] == file]
 
+    # Pass None if user does not provide marker image
     groups = filter_cells(img, marker, mask, partial_df, path=file)
 
     df.loc[df['Path'] == file, "Group"] = groups

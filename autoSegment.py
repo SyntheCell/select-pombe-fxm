@@ -2,6 +2,36 @@ import numpy as np
 import pandas as pd
 import mahotas as mh
 
+def remove_close_to_edge(labels, img_size=2048):
+    centers = mh.center_of_mass(labels, labels)
+
+    # Create numpy array with as many empty items as the number of centers
+    is_close_to_edge = [False] * len(centers)
+
+    for c, pix in enumerate(centers):  # Iterates over all label centers
+        if c == 0:
+            # This is the background region
+            continue
+
+        x = int(pix[0])
+        y = int(pix[1])
+
+        #print(x, y)
+
+        if x - 100 < 0 or y - 100 < 0 or x + 100 > img_size or y + 100 > img_size:
+            is_close_to_edge[c] = True
+            #print("Close to edge")
+    #print(is_close_to_edge)
+    labels = mh.labeled.remove_regions(labels, np.where(is_close_to_edge))
+    labels, n_labels = mh.labeled.relabel(labels)
+
+    centers = mh.center_of_mass(labels, labels)
+    centers = centers[1:] # Removes background region from data
+
+    #print(n_labels)
+
+    return labels
+
 
 def get_bg_box(x, y, img_size=2048):
     """
@@ -34,6 +64,9 @@ def segment(pillar_mask):
     pillar_mask = mh.labeled.remove_regions(pillar_mask, np.where(sizes > 20000))  # Threshold size to remove pillars
     pillar_mask = mh.labeled.remove_bordering(pillar_mask)  # Removes selections touching the edges
     cells, n_cells = mh.labeled.relabel(pillar_mask)
+
+    # Removes regions close to the edges
+    cells = remove_close_to_edge(cells)
 
     return cells
 
@@ -100,6 +133,7 @@ def get_volume(img, bg_mask, cells, pillar_height=5.6, pixel_size=0.325):
                        "Background": list(bg_intensities),
                        "Surface": list(surfaces),
                        "Intensity": list(intensities),
+
                        "Volume": list(volumes)})
 
     return df
